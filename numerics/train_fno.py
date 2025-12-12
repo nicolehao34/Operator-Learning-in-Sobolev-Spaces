@@ -1,6 +1,4 @@
 """
-train_fno.py
-
 Basic training script for Fourier Neural Operator on 1D Burgers' equation.
 Trains a single FNO model and visualizes results.
 """
@@ -410,7 +408,7 @@ def plot_example(model, x_test, y_test, idx=0, L=1.0, device="cpu"):
 
 if __name__ == "__main__":
     # PDE parameters
-    N = 64  # Spatial grid points
+    N = 64  # spatial grid points
     nu = 0.01
     L = 1.0
     t_final = 1.0
@@ -419,9 +417,9 @@ if __name__ == "__main__":
     # Dataset size
     n_train = 256
     n_test = 64
-    h1_radius = 0.3  # Small for stability
+    h1_radius = 0.3  # small for stability
 
-    # Generate dataset
+    # Generate ONE dataset to reuse across all model sizes
     x_train, y_train, x_test, y_test = generate_dataset(
         n_train=n_train,
         n_test=n_test,
@@ -434,32 +432,73 @@ if __name__ == "__main__":
         seed=42,
     )
 
-    # FNO parameters
-    modes = 16
-    width = 64
-    batch_size = 32
-    lr = 1e-3
-    n_epochs = 50
-
-    # Train model
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model, final_loss = train_fno(
-        x_train,
-        y_train,
-        x_test,
-        y_test,
-        modes=modes,
-        width=width,
-        batch_size=batch_size,
-        lr=lr,
-        n_epochs=n_epochs,
-        L=L,
-        device=device,
-    )
 
-    # Visualize results
+    # --------------------------------------------------------
+    # Model-size sweep: list of (modes, width) configurations
+    # --------------------------------------------------------
+    configs = [
+        {"modes": 8,  "width": 32},
+        {"modes": 12, "width": 48},
+        {"modes": 16, "width": 64},
+        {"modes": 24, "width": 96},
+    ]
+
+    results = []  # will store (num_params, test_H1_loss)
+
+    for cfg in configs:
+        print("=" * 60)
+        print(f"Training FNO with modes={cfg['modes']}, width={cfg['width']}")
+
+        model, test_loss = train_fno(
+            x_train,
+            y_train,
+            x_test,
+            y_test,
+            modes=cfg["modes"],
+            width=cfg["width"],
+            batch_size=32,
+            lr=1e-3,
+            n_epochs=50,
+            L=L,
+            device=device,
+        )
+
+        n_params = count_parameters(model)
+        results.append((n_params, test_loss))
+        print(f"Params: {n_params}, Test H1-loss: {test_loss:.4e}")
+
+    print("\nAll (params, test_H1_loss) pairs:")
+    for n_params, err in results:
+        print(f"N = {n_params:8d},  H1-error = {err:.4e}")
+
+    # --------------------------------------------------------
+    # Log–log plot of error vs model size
+    # --------------------------------------------------------
+    params = np.array([p for p, e in results], dtype=float)
+    errors = np.array([e for p, e in results], dtype=float)
+
+    plt.figure()
+    plt.loglog(params, errors, "o-")
+    plt.xlabel("Number of parameters $N$")
+    plt.ylabel("Test $H^1$-error")
+    plt.title("FNO approximation of Burgers solution operator")
+    plt.grid(True, which="both", ls="--")
+    plt.tight_layout()
+    plt.savefig("figure_1.png", dpi=150)
+    print("Saved log–log plot to figure_1.png")
+
+    # Empirical slope (power-law exponent)
+    log_p = np.log(params)
+    log_e = np.log(errors)
+    slope, intercept = np.polyfit(log_p, log_e, 1)
+    print(f"Empirical exponent alpha ≈ {-slope:.3f}")
+
+    # --------------------------------------------------------
+    # Optional: visualize one example from the largest model
+    # --------------------------------------------------------
     plot_example(model, x_test, y_test, idx=0, L=L, device=device)
 
-    # Save model
-    torch.save(model.state_dict(), "fno_burgers.pt")
-    print("Saved model to fno_burgers.pt")
+    # Save the last (largest) model if you like
+    torch.save(model.state_dict(), "fno_burgers_largest.pt")
+    print("Saved largest model to fno_burgers_largest.pt")
