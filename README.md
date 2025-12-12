@@ -6,10 +6,14 @@ This project bridges **functional analysis** and **operator learning** to (more 
 The goal of this project is to characterize/study the interplay between neural network architecture, optimization dynamics, and approximation error in high-dimensional function spaces, with applications to learning solution operators of PDEs.  
 
 Work in Progress! I will add the code for numerical experiments soon :)
+## Update History
 
-- **May 27, 2025 Update: Created and uploaded numerics and theory folders.**
-- **Jun 6, 2025 Update: First version of numerics, updated report, modifed repo structure.**
-  
+This section chronicles the major updates and milestones of the project:
+
+- **December 11, 2025**: Minor update, compiled all scripts to train_fno.py and parameter_sweep.py. Kept solver.py for future references.
+- **May 27, 2025**: Initial repository structure established with numerics and theory directories
+- **June 6, 2025**: Released first iteration of numerical implementations, updated project documentation, and reorganized repository structure for improved maintainability
+
 ---
 
 ## Some background info on Operator Learning
@@ -55,32 +59,15 @@ Operator learning means using a neural network to learn a machine (the operator)
 - Install dependecies first using `pip install -r requirements.txt`
 
 ---
-
 ## Repo Structure 
 -  `theory/`
-    - `results.pdf`: proofs and theoreticsal background.  
+    - `results.pdf`: proofs and theoretical background.  
 
-- `numerics`, use this set of scripts to reproduce experiments and numerical results.  
+- `numerics/`: use this set of scripts to reproduce experiments and numerical results.  
 
-    - solver.py: Spectral solver for Burgers equation
+    - `solver.py`: Spectral solver for Burgers equation (kept for reference)
 
-    - data.py: Dataset generation using the solver
+    - `train_fno.py`: Compiled training script with full training loop
 
-    - model.py: FNO architecture
-
-    - train.py: Training loop
-
-    - sobolev.py: H1 norm error calculation
-
-    - main.py: Main script to run everything end-to-end
-
-## To Run Experiments
-
-In terminal, run
-
-`cd numerics`
-
-then,
-
-`python main.py`
+    - `parameter_sweep.py`: Script for hyperparameter experiments and depth/width scaling studies
 
