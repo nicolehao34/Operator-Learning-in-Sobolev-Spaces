@@ -1,6 +1,4 @@
 """
-parameter_sweep.py
-
 Parameter sweep experiment to study FNO approximation rates.
 Tests different model sizes and plots error vs. parameter count.
 """
