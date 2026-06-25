@@ -101,17 +101,30 @@ def fig_best_vs_final(results_path, out_path):
 
     P = np.array([c["params"] for c in configs], float)
     best_mean = np.array([np.mean(c["best_list"]) for c in configs])
-    best_std = np.array([np.std(c["best_list"]) for c in configs])
     final_mean = np.array([np.mean(c["final_list"]) for c in configs])
-    final_std = np.array([np.std(c["final_list"]) for c in configs])
+    # Per-seed min/max error bars (std can go negative on a log axis and clip).
+    best_lo = np.array([np.min(c["best_list"]) for c in configs])
+    best_hi = np.array([np.max(c["best_list"]) for c in configs])
+    final_lo = np.array([np.min(c["final_list"]) for c in configs])
+    final_hi = np.array([np.max(c["final_list"]) for c in configs])
+    best_yerr = np.array([best_mean - best_lo, best_hi - best_mean])
+    final_yerr = np.array([final_mean - final_lo, final_hi - final_mean])
 
     assert np.all(final_mean >= best_mean - 1e-15 * np.maximum(best_mean, 1.0))
 
+    all_vals = []
+    for c in configs:
+        all_vals.extend(c["best_list"])
+        all_vals.extend(c["final_list"])
+    ylo, yhi = float(min(all_vals)), float(max(all_vals))
+
     fig, ax = plt.subplots()
-    ax.errorbar(P, best_mean, yerr=best_std, fmt="o-", capsize=3, label="best-epoch")
-    ax.errorbar(P, final_mean, yerr=final_std, fmt="s-", capsize=3, label="final-epoch")
+    ax.errorbar(P, best_mean, yerr=best_yerr, fmt="o-", capsize=3, label="best-epoch")
+    ax.errorbar(P, final_mean, yerr=final_yerr, fmt="s-", capsize=3, label="final-epoch")
     ax.set_xscale("log")
     ax.set_yscale("log")
+    # Pad one log-decade beyond observed range so error caps are not clipped.
+    ax.set_ylim(ylo / 10.0, yhi * 10.0)
     ax.set_xlabel("parameters $N$")
     ax.set_ylabel(r"test $H^1$ error")
     ax.set_title("Best- vs final-epoch error: optimization-limited regime")
