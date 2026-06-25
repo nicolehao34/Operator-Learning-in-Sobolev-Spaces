@@ -1,0 +1,61 @@
+{
+  "operator": "burgers",
+  "grid": 64,
+  "ceiling": 33,
+  "epochs": 4,
+  "seeds": 1,
+  "configs": [
+    {
+      "modes": 4,
+      "width": 16,
+      "params": 11633,
+      "best_list": [
+        0.04129153862595558
+      ],
+      "final_list": [
+        0.04129153862595558
+      ],
+      "rel_list": [
+        0.9992010250092251
+      ],
+      "n_spiked": 0
+    },
+    {
+      "modes": 8,
+      "width": 24,
+      "params": 42665,
+      "best_list": [
+        0.040308691561222076
+      ],
+      "final_list": [
+        0.040308691561222076
+      ],
+      "rel_list": [
+        0.9873606295218955
+      ],
+      "n_spiked": 0
+    }
+  ],
+  "fit": {
+    "alpha": 0.01853780198938948,
+    "ci95": [
+      0.01853780198938948,
+      0.01853780198938948
+    ],
+    "r2": 1.0,
+    "C": 0.04911679885414435
+  },
+  "params_used": {
+    "operator": "burgers",
+    "grid": 64,
+    "seeds": 1,
+    "epochs": 4,
+    "n_train": 64,
+    "n_test": 32,
+    "lr": 0.001,
+    "batch": 32,
+    "nu": 0.01,
+    "grad_clip": null,
+    "quick": true
+  }
+}

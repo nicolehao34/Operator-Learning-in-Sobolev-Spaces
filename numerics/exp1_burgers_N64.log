@@ -1,0 +1,35 @@
+repo components: True | device: cpu | operator: burgers
+dataset: train=(256, 64) test=(64, 64) | rfft ceiling=33
+  modes= 4 width= 16 seed=0 N=   11,633 best=6.400e-07 final=6.400e-07 rel=4.173e-03 spike=False
+  modes= 4 width= 16 seed=1 N=   11,633 best=6.855e-07 final=6.855e-07 rel=4.201e-03 spike=False
+  modes= 4 width= 16 seed=2 N=   11,633 best=7.697e-07 final=7.898e-07 rel=4.654e-03 spike=False
+  modes= 4 width= 16 seed=3 N=   11,633 best=4.527e-07 final=5.071e-07 rel=3.716e-03 spike=False
+  modes= 4 width= 16 seed=4 N=   11,633 best=6.179e-07 final=6.179e-07 rel=4.107e-03 spike=False
+  modes= 8 width= 24 seed=0 N=   42,665 best=7.111e-07 final=7.271e-07 rel=4.322e-03 spike=False
+  modes= 8 width= 24 seed=1 N=   42,665 best=5.977e-07 final=6.208e-07 rel=3.977e-03 spike=False
+  modes= 8 width= 24 seed=2 N=   42,665 best=6.217e-07 final=6.217e-07 rel=4.080e-03 spike=False
+  modes= 8 width= 24 seed=3 N=   42,665 best=4.645e-07 final=4.645e-07 rel=3.459e-03 spike=False
+  modes= 8 width= 24 seed=4 N=   42,665 best=4.183e-07 final=4.183e-07 rel=3.281e-03 spike=False
+  modes= 8 width= 48 seed=0 N=  163,409 best=5.029e-07 final=5.219e-07 rel=3.823e-03 spike=True
+  modes= 8 width= 48 seed=1 N=  163,409 best=5.919e-07 final=1.155e-06 rel=5.665e-03 spike=False
+  modes= 8 width= 48 seed=2 N=  163,409 best=4.774e-07 final=2.317e-06 rel=8.482e-03 spike=False
+  modes= 8 width= 48 seed=3 N=  163,409 best=5.613e-07 final=5.613e-07 rel=3.852e-03 spike=False
+  modes= 8 width= 48 seed=4 N=  163,409 best=5.179e-07 final=1.069e-06 rel=5.585e-03 spike=False
+  modes=12 width= 48 seed=0 N=  237,137 best=6.545e-07 final=1.492e-06 rel=6.469e-03 spike=False
+  modes=12 width= 48 seed=1 N=  237,137 best=5.784e-07 final=3.504e-06 rel=9.841e-03 spike=False
+  modes=12 width= 48 seed=2 N=  237,137 best=4.252e-07 final=4.485e-07 rel=3.395e-03 spike=False
+  modes=12 width= 48 seed=3 N=  237,137 best=5.821e-07 final=5.821e-07 rel=3.922e-03 spike=False
+  modes=12 width= 48 seed=4 N=  237,137 best=4.782e-07 final=4.782e-07 rel=3.525e-03 spike=True
+  modes=16 width= 64 seed=0 N=  549,569 best=5.696e-07 final=5.758e-07 rel=3.837e-03 spike=False
+  modes=16 width= 64 seed=1 N=  549,569 best=4.591e-07 final=4.666e-07 rel=3.459e-03 spike=False
+  modes=16 width= 64 seed=2 N=  549,569 best=3.998e-07 final=3.998e-07 rel=3.200e-03 spike=True
+  modes=16 width= 64 seed=3 N=  549,569 best=5.959e-07 final=2.926e-06 rel=9.119e-03 spike=True
+  modes=16 width= 64 seed=4 N=  549,569 best=4.448e-07 final=4.448e-07 rel=3.384e-03 spike=False
+  modes=20 width= 80 seed=0 N=1,060,657 best=5.667e-07 final=5.831e-07 rel=3.913e-03 spike=True
+  modes=20 width= 80 seed=1 N=1,060,657 best=5.279e-07 final=6.993e-07 rel=4.216e-03 spike=False
+  modes=20 width= 80 seed=2 N=1,060,657 best=4.247e-07 final=1.329e-06 rel=5.766e-03 spike=True
+  modes=20 width= 80 seed=3 N=1,060,657 best=3.942e-07 final=3.942e-07 rel=3.191e-03 spike=True
+  modes=20 width= 80 seed=4 N=1,060,657 best=5.281e-07 final=5.284e-07 rel=3.689e-03 spike=True
+  modes=24 width= 96 seed=0 N=1,819,553 best=3.490e-07 final=4.201e-07 rel=3.337e-03 spike=True
+  modes=24 width= 96 seed=1 N=1,819,553 best=4.687e-07 final=4.687e-07 rel=3.499e-03 spike=False
+  modes=24 width= 96 seed=2 N=1,819,553 best=6.011e-07 final=6.011e-07 rel=4.162e-03 spike=True

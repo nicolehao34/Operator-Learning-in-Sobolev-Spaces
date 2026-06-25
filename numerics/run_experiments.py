@@ -1,6 +1,6 @@
 """
-run_experiments.py — JMLR-strengthening experiments for
-Operator-Learning-in-Sobolev-Spaces.
+run_experiments.py — experiments for
+Operator-Learning-in-Sobolev-Spaces. prepping for submission.
 
 Drop this into numerics/ alongside train_fno.py. It re-imports your existing
 FNO1d, solver, dataset, and H^1 loss so results are consistent with the paper.
@@ -31,7 +31,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
 # ------------------------------------------------------------------
-# Reuse the repo's components if available; otherwise define fallbacks
+# Reuse the components if available; otherwise define fallbacks
 # ------------------------------------------------------------------
 try:
     from train_fno import (
