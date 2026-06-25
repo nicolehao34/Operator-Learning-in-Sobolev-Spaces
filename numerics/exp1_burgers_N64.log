@@ -33,3 +33,8 @@ dataset: train=(256, 64) test=(64, 64) | rfft ceiling=33
   modes=24 width= 96 seed=0 N=1,819,553 best=3.490e-07 final=4.201e-07 rel=3.337e-03 spike=True
   modes=24 width= 96 seed=1 N=1,819,553 best=4.687e-07 final=4.687e-07 rel=3.499e-03 spike=False
   modes=24 width= 96 seed=2 N=1,819,553 best=6.011e-07 final=6.011e-07 rel=4.162e-03 spike=True
+  modes=24 width= 96 seed=3 N=1,819,553 best=9.244e-08 final=9.244e-08 rel=2.025e-03 spike=True
+  modes=24 width= 96 seed=4 N=1,819,553 best=2.656e-07 final=2.656e-07 rel=3.845e-03 spike=True
+  modes=32 width=128 seed=0 N=4,277,377 best=2.717e-08 final=2.717e-08 rel=9.155e-04 spike=True
+  modes=32 width=128 seed=1 N=4,277,377 best=1.564e-07 final=1.564e-07 rel=2.032e-03 spike=True
+  modes=32 width=128 seed=2 N=4,277,377 best=2.231e-07 final=2.231e-07 rel=2.409e-03 spike=True
