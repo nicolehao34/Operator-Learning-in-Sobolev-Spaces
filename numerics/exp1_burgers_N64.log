@@ -38,3 +38,12 @@ dataset: train=(256, 64) test=(64, 64) | rfft ceiling=33
   modes=32 width=128 seed=0 N=4,277,377 best=2.717e-08 final=2.717e-08 rel=9.155e-04 spike=True
   modes=32 width=128 seed=1 N=4,277,377 best=1.564e-07 final=1.564e-07 rel=2.032e-03 spike=True
   modes=32 width=128 seed=2 N=4,277,377 best=2.231e-07 final=2.231e-07 rel=2.409e-03 spike=True
+  modes=32 width=128 seed=3 N=4,277,377 best=2.445e-07 final=2.445e-07 rel=2.498e-03 spike=True
+  modes=32 width=128 seed=4 N=4,277,377 best=2.630e-07 final=5.147e-06 rel=1.119e-02 spike=True
+
+=== SCALING FIT (best-epoch, seed-mean) ===
+alpha = 0.161  95% CI [0.064, 0.429]
+R^2   = 0.629   C = 3.417e-06
+benchmark s/d = 1.0  -> CI EXCLUDES benchmark
+wrote results_burgers_N64.json
+wrote scaling_burgers_N64.png
