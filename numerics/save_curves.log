@@ -1,0 +1,11 @@
+repo components: True | device: cpu | save_curves mode
+dataset: train=(256, 256) test=(64, 256) | seed=1000
+  modes= 4 width= 16 N=   11,633 points=40
+  modes= 8 width= 24 N=   42,665 points=40
+  modes= 8 width= 48 N=  163,409 points=40
+  modes=12 width= 48 N=  237,137 points=40
+  modes=16 width= 64 N=  549,569 points=40
+  modes=20 width= 80 N=1,060,657 points=40
+  modes=24 width= 96 N=1,819,553 points=40
+  modes=32 width=128 N=4,277,377 points=40
+wrote curves_burgers_N256.json

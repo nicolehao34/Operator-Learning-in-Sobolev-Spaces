@@ -16,6 +16,7 @@ Usage examples:
   python run_experiments.py --operator burgers --grid 256 --seeds 5 --epochs 200
   python run_experiments.py --operator linear  --grid 256 --seeds 5 --epochs 200
   python run_experiments.py --quick           # tiny smoke test on CPU
+  python run_experiments.py --save_curves     # per-epoch curves for paper FIG 1
 
 Outputs: results_<operator>_N<grid>.json  and  scaling_<operator>_N<grid>.png
 """
@@ -215,6 +216,10 @@ def rel_h1_error(model, x, y, L, device):
     return float(np.sqrt(num / den))
 
 
+DEFAULT_CONFIGS = [(4, 16), (8, 24), (8, 48), (12, 48),
+                   (16, 64), (20, 80), (24, 96), (32, 128)]
+
+
 def train_one(x_train, y_train, x_test, y_test, modes, width, epochs, lr,
               batch, L, device, model_seed, grad_clip=None, eval_every=5):
     torch.manual_seed(model_seed)
@@ -228,6 +233,8 @@ def train_one(x_train, y_train, x_test, y_test, modes, width, epochs, lr,
     final = float("inf")
     spiked = False
     prev = None
+    history_epochs = []
+    history_loss = []
     for ep in range(1, epochs + 1):
         model.train()
         for xb, yb in tr:
@@ -247,6 +254,8 @@ def train_one(x_train, y_train, x_test, y_test, modes, width, epochs, lr,
                     l, _, _ = h1_loss_torch(model(xb), yb, L=L)
                     acc += l.item() * xb.size(0)
             tl = acc / len(x_test)
+            history_epochs.append(ep)
+            history_loss.append(tl)
             best = min(best, tl)
             final = tl
             if prev is not None and tl > 25.0 * prev:   # >1.4 orders of magnitude jump
@@ -259,6 +268,8 @@ def train_one(x_train, y_train, x_test, y_test, modes, width, epochs, lr,
         "final": final,
         "rel_h1": rel,
         "spiked": spiked,
+        "epochs": history_epochs,
+        "test_loss": history_loss,
     }
 
 
@@ -291,6 +302,48 @@ def fit_alpha(per_config, n_boot=2000, rng_seed=0):
 
 
 # ------------------------------------------------------------------
+# Per-epoch curve dump (one representative seed for paper figures)
+# ------------------------------------------------------------------
+def save_curves(args):
+    """Train 8 configs with model_seed=1000; write numerics/curves_burgers_N256.json."""
+    L = 1.0
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_seed = 1000
+    configs = DEFAULT_CONFIGS
+    soln_kw = dict(nu=args.nu, t_final=1.0, dt=2e-3, L=L)
+
+    print(f"repo components: {_USING_REPO} | device: {device} | save_curves mode")
+    xtr, ytr, xte, yte = make_dataset(args.n_train, args.n_test, args.grid,
+                                      args.operator, data_seed=0, **soln_kw)
+    print(f"dataset: train={xtr.shape} test={xte.shape} | seed={model_seed}")
+
+    curve_configs = []
+    for m, w in configs:
+        r = train_one(xtr, ytr, xte, yte, m, w, args.epochs, args.lr,
+                      args.batch, L, device, model_seed=model_seed,
+                      grad_clip=args.grad_clip)
+        curve_configs.append({
+            "modes": m, "width": w, "params": r["params"],
+            "epochs": r["epochs"], "test_loss": r["test_loss"],
+        })
+        print(f"  modes={m:2d} width={w:3d} N={r['params']:>9,} "
+              f"points={len(r['epochs'])}")
+
+    out = {
+        "operator": args.operator,
+        "grid": args.grid,
+        "model_seed": model_seed,
+        "epochs": args.epochs,
+        "eval_every": 5,
+        "configs": curve_configs,
+    }
+    fn = f"curves_{args.operator}_N{args.grid}.json"
+    with open(fn, "w") as f:
+        json.dump(out, f, indent=2)
+    print(f"wrote {fn}")
+
+
+# ------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------
 def main():
@@ -307,7 +360,17 @@ def main():
     ap.add_argument("--grad_clip", type=float, default=None)
     ap.add_argument("--quick", action="store_true",
                     help="tiny smoke test (CPU, 2 configs, 1 seed, 4 epochs)")
+    ap.add_argument("--save_curves", action="store_true",
+                    help="train 8 configs x 1 seed; dump per-epoch test loss JSON")
     args = ap.parse_args()
+
+    if args.save_curves:
+        if args.operator != "burgers" or args.grid != 256:
+            print("WARN: --save_curves defaults to burgers N=256 for paper FIG 1")
+        args.operator = "burgers"
+        args.grid = 256
+        save_curves(args)
+        return
 
     L = 1.0
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -318,9 +381,7 @@ def main():
         args.seeds, args.epochs, args.grid = 1, 4, 64
         args.n_train, args.n_test = 64, 32
     else:
-        # 8 sizes; all below the rfft ceiling (grid//2+1) when grid>=256
-        configs = [(4, 16), (8, 24), (8, 48), (12, 48),
-                   (16, 64), (20, 80), (24, 96), (32, 128)]
+        configs = DEFAULT_CONFIGS
 
     ceiling = args.grid // 2 + 1
     soln_kw = dict(nu=args.nu, t_final=1.0, dt=2e-3, L=L)
