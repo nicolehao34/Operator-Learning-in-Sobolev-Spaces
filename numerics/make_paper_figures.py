@@ -160,6 +160,89 @@ def fig_alpha_resolution(path64, path256, out_path):
     return "2 points + benchmark line, log x-axis"
 
 
+def fig_scaling_burgers(results_path, out_path):
+    """Scaling plot matching original layout; fonts from apply_paper_style()."""
+    results = _load_json(results_path)
+    configs = _sorted_configs(results)
+    fit = results["fit"]
+
+    P = np.array([c["params"] for c in configs], float)
+    mean = np.array([np.mean(c["best_list"]) for c in configs])
+    std = np.array([np.std(c["best_list"]) for c in configs])
+
+    fig, ax = plt.subplots()
+    ax.errorbar(P, mean, yerr=std, fmt="o-", capsize=3, label="best-epoch (mean±std)")
+    ref = mean[0] * (P / P[0]) ** (-1.0)
+    ax.loglog(P, ref, "k--", alpha=0.6, label=r"benchmark $N^{-1}$")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("parameters $N$")
+    ax.set_ylabel(r"test $H^1$ error")
+    ax.set_title(
+        f"{results['operator']}, N={results['grid']}: "
+        rf"$\alpha$={fit['alpha']:.2f} "
+        f"[{fit['ci95'][0]:.2f},{fit['ci95'][1]:.2f}]"
+    )
+    ax.legend()
+    ax.grid(True, which="both", ls=":")
+    fig.tight_layout()
+    _save_fig(out_path)
+    return "1 series + benchmark, log-log"
+
+
+def fig_longrun(longrun_path, out_path):
+    data = _load_json(longrun_path)
+    runs = sorted(data["runs"], key=lambda r: r["max_epochs"])
+    colors = viridis_by_size(len(runs))
+
+    fig, ax = plt.subplots()
+    for run, col in zip(runs, colors):
+        ep = np.array(run["epochs"], dtype=float)
+        loss = np.array(run["test_loss"], dtype=float)
+        ax.plot(ep, loss, color=col, label=f"{run['max_epochs']} epochs")
+
+    ax.set_yscale("log")
+    ax.set_xlabel("epoch")
+    ax.set_ylabel(r"test $H^1$ loss")
+    ax.set_title(r"Long-run learning curves (modes=24, width=96, $N=64$)")
+    ax.legend()
+    _save_fig(out_path)
+    return f"{len(runs)} lines, log y-axis"
+
+
+def fig_prediction(pred_path, out_path):
+    d = _load_json(pred_path)
+    x = np.array(d["x"])
+    u0 = np.array(d["u0"])
+    uT_true = np.array(d["uT_true"])
+    uT_pred = np.array(d["uT_pred"])
+    g_true = np.array(d["grad_true"])
+    g_pred = np.array(d["grad_pred"])
+
+    c_true = viridis_by_size(3)[1]
+    c_pred = viridis_by_size(3)[2]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.0, 4.0))
+    ax1.plot(x, u0, color="0.5", alpha=0.7, label=r"$u(x,0)$")
+    ax1.plot(x, uT_true, color=c_true, label=r"$u(x,1)$ true")
+    ax1.plot(x, uT_pred, "--", color=c_pred, label=r"$u(x,1)$ pred")
+    ax1.set_xlabel("$x$")
+    ax1.set_ylabel("$u$")
+    ax1.set_title("Solution at $t=1$")
+    ax1.legend(fontsize=8)
+
+    ax2.plot(x, g_true, color=c_true, label=r"$\partial_x u$ true")
+    ax2.plot(x, g_pred, "--", color=c_pred, label=r"$\partial_x u$ pred")
+    ax2.set_xlabel("$x$")
+    ax2.set_ylabel(r"$\partial_x u$")
+    ax2.set_title("Derivative at $t=1$")
+    ax2.legend(fontsize=8)
+
+    fig.tight_layout()
+    _save_fig(out_path)
+    return "2 panels, linear axes"
+
+
 def fig_two_operator_scaling(burgers_path, linear_path, out_path):
     burgers = _load_json(burgers_path)
     linear = _load_json(linear_path)
@@ -238,6 +321,33 @@ def main():
         print("FIG 5 skipped: results_linear_N256.json not found — run "
               "`python run_experiments.py --operator linear --grid 256 --seeds 5 --epochs 200` "
               "first.")
+
+    # Legacy figures restyled to match paper family
+    longrun_path = os.path.join(NUMERICS_DIR, "longrun_curves_N64.json")
+    pred_path = os.path.join(NUMERICS_DIR, "prediction_sample_N64.json")
+
+    out_scaling = os.path.join(REPO_ROOT, "scaling_burgers_N256.png")
+    detail_s = fig_scaling_burgers(results256, out_scaling)
+    _assert_png(out_scaling)
+    summaries.append((out_scaling, f"OK ({detail_s})"))
+
+    if os.path.isfile(longrun_path):
+        out_lr = os.path.join(REPO_ROOT, "fno_longrun_learning_curves.png")
+        detail_lr = fig_longrun(longrun_path, out_lr)
+        _assert_png(out_lr)
+        summaries.append((out_lr, f"OK ({detail_lr})"))
+    else:
+        print("fno_longrun_learning_curves.png skipped: run "
+              "`python save_legacy_figure_data.py` first.")
+
+    if os.path.isfile(pred_path):
+        out_pred = os.path.join(REPO_ROOT, "fno_prediction.png")
+        detail_pred = fig_prediction(pred_path, out_pred)
+        _assert_png(out_pred)
+        summaries.append((out_pred, f"OK ({detail_pred})"))
+    else:
+        print("fno_prediction.png skipped: run "
+              "`python save_legacy_figure_data.py` first.")
 
     for path, msg in summaries:
         name = os.path.basename(path)

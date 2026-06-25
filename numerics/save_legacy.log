@@ -1,0 +1,7 @@
+device: cpu
+dataset: train=(256, 64) test=(64, 64)
+=== long run: 100 epochs ===
+=== long run: 500 epochs ===
+=== long run: 1000 epochs ===
+wrote /Users/nicolehao/Operator-Learning-in-Sobolev-Spaces/numerics/longrun_curves_N64.json
+wrote /Users/nicolehao/Operator-Learning-in-Sobolev-Spaces/numerics/prediction_sample_N64.json

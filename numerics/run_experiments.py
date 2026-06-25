@@ -221,7 +221,8 @@ DEFAULT_CONFIGS = [(4, 16), (8, 24), (8, 48), (12, 48),
 
 
 def train_one(x_train, y_train, x_test, y_test, modes, width, epochs, lr,
-              batch, L, device, model_seed, grad_clip=None, eval_every=5):
+              batch, L, device, model_seed, grad_clip=None, eval_every=5,
+              return_model=False):
     torch.manual_seed(model_seed)
     np.random.seed(model_seed)
     model = FNO1d(modes=modes, width=width).to(device)
@@ -262,7 +263,7 @@ def train_one(x_train, y_train, x_test, y_test, modes, width, epochs, lr,
                 spiked = True
             prev = tl
     rel = rel_h1_error(model, x_test, y_test, L, device)
-    return {
+    out = {
         "params": count_parameters(model),
         "best": best,
         "final": final,
@@ -271,6 +272,9 @@ def train_one(x_train, y_train, x_test, y_test, modes, width, epochs, lr,
         "epochs": history_epochs,
         "test_loss": history_loss,
     }
+    if return_model:
+        out["model"] = model
+    return out
 
 
 # ------------------------------------------------------------------
