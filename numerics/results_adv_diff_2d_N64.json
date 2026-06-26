@@ -1,9 +1,9 @@
 {
-  "operator": "burgers",
+  "operator": "adv_diff_2d",
   "grid": 64,
-  "d": 1,
+  "d": 2,
   "s": 1.0,
-  "benchmark_exponent": 1.0,
+  "benchmark_exponent": 0.5,
   "ceiling": 33,
   "epochs": 4,
   "seeds": 1,
@@ -11,46 +11,46 @@
     {
       "modes": 4,
       "width": 16,
-      "params": 11633,
+      "params": 36225,
       "best_list": [
-        0.010862988419830799
+        0.0035478773061186075
       ],
       "final_list": [
-        0.010862988419830799
+        0.0035478773061186075
       ],
       "rel_list": [
-        2.7079443779911023
+        6.967137646167319
       ],
       "n_spiked": 0
     },
     {
       "modes": 8,
       "width": 24,
-      "params": 42665,
+      "params": 300737,
       "best_list": [
-        0.001479516620747745
+        0.00015275402984116226
       ],
       "final_list": [
-        0.001479516620747745
+        0.00015275402984116226
       ],
       "rel_list": [
-        1.0058815062656594
+        1.4456760094418994
       ],
       "n_spiked": 0
     }
   ],
   "fit": {
-    "alpha": 1.5341249418191627,
+    "alpha": 1.4860834563976235,
     "ci95": [
-      1.5341249418191627,
-      1.5341249418191627
+      1.4860834563976235,
+      1.4860834563976235
     ],
     "r2": 1.0,
-    "C": 18759.80856891091
+    "C": 21136.620243766476
   },
   "total_n_spiked": 0,
   "params_used": {
-    "operator": "burgers",
+    "operator": "adv_diff_2d",
     "grid": 64,
     "seeds": 1,
     "epochs": 4,
@@ -59,12 +59,11 @@
     "lr": 0.001,
     "batch": 32,
     "nu": 0.01,
-    "grad_clip": 1.0,
-    "lr_schedule": "cosine",
+    "grad_clip": null,
+    "lr_schedule": "none",
     "ic_smoothness": 1,
-    "benchmark_exponent": null,
+    "benchmark_exponent": 0.5,
     "quick": true,
-    "save_curves": false,
     "no_plot": false,
     "plot": true
   }

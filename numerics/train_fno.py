@@ -83,8 +83,15 @@ def h1_norm(u, L=1.0):
     return np.sqrt(np.mean(integrand))
 
 
-def sample_smooth_ic(N, L=1.0, h1_radius=0.5, rng=None):
-    """Sample a random smooth initial condition with bounded H^1 norm."""
+def sample_smooth_ic(N, L=1.0, h1_radius=0.5, ic_smoothness=1.0, rng=None,
+                     legacy_gaussian=False):
+    """
+    Sample a random smooth IC with controlled Sobolev regularity.
+
+    ic_smoothness is the target Sobolev exponent s (H^s): Fourier coefficients
+    are filtered by |k|^(-s) before normalization.  Larger s -> smoother ICs.
+    With legacy_gaussian=True, use the original Gaussian low-pass (approx. s~1).
+    """
     if rng is None:
         rng = np.random.default_rng()
 
@@ -92,20 +99,33 @@ def sample_smooth_ic(N, L=1.0, h1_radius=0.5, rng=None):
     k = np.fft.fftfreq(N, d=L / N)
     u_hat = np.fft.fft(u)
 
-    # Gaussian low-pass filter
-    alpha = 12.0
-    filter_ = np.exp(-alpha * (k**2))
-    u_hat_filtered = u_hat * filter_
-    u_smooth = np.real(np.fft.ifft(u_hat_filtered))
+    if legacy_gaussian:
+        filter_ = np.exp(-12.0 * (k ** 2))
+    else:
+        k_abs = np.abs(k)
+        k_abs[0] = 1.0
+        filter_ = k_abs ** (-float(ic_smoothness))
 
+    u_smooth = np.real(np.fft.ifft(u_hat * filter_))
     u_smooth -= np.mean(u_smooth)
 
-    # Scale to H^1 radius
     norm = h1_norm(u_smooth, L=L)
     if norm > 1e-8:
         u_smooth = (h1_radius / norm) * u_smooth
 
     return u_smooth
+
+
+def estimate_ic_spectrum_decay(u, L=1.0):
+    """Estimate effective Fourier decay exponent (diagnostic for ic_smoothness)."""
+    N = u.shape[-1]
+    k = np.abs(np.fft.fftfreq(N, d=L / N))
+    u_hat = np.abs(np.fft.fft(u))
+    mask = (k > 0) & (k <= k.max() / 4)
+    if mask.sum() < 4:
+        return float("nan")
+    slope, _ = np.polyfit(np.log(k[mask]), np.log(u_hat[mask] + 1e-30), 1)
+    return float(-slope)
 
 
 def generate_dataset(
@@ -185,6 +205,87 @@ def h1_loss_torch(u_pred, u_true, L=1.0):
     return l2_term + grad_term, l2_term.detach(), grad_term.detach()
 
 
+def spectral_derivative_2d(u, axis, L=1.0):
+    """Spectral first derivative along axis 0 (x) or 1 (y) on [0,L]^2 periodic."""
+    N = u.shape[axis]
+    k = 2.0 * np.pi * np.fft.fftfreq(N, d=L / N)
+    u_hat = np.fft.fft(u, axis=axis)
+    shape = [1] * u.ndim
+    shape[axis] = N
+    du_hat = (1j * k.reshape(shape)) * u_hat
+    return np.real(np.fft.ifft(du_hat, axis=axis))
+
+
+def h1_norm_2d(u, L=1.0):
+    """Discrete H^1 seminorm on [0,L]^2: L2(u) + L2(u_x) + L2(u_y)."""
+    u_x = spectral_derivative_2d(u, axis=0, L=L)
+    u_y = spectral_derivative_2d(u, axis=1, L=L)
+    return np.sqrt(np.mean(u ** 2 + u_x ** 2 + u_y ** 2))
+
+
+def adv_diff_2d_solver(u0, nu=0.01, cx=1.0, cy=1.0, t_final=1.0, dt=2e-3, L=1.0):
+    """u_t + c·∇u = nu Δu on [0,L]^2, periodic BC, spectral integrating factor."""
+    lap = None
+    u_hat = np.fft.fft2(u0)
+    n_steps = int(t_final / dt)
+    for _ in range(n_steps):
+        if lap is None:
+            Nx, Ny = u0.shape
+            kx = 2.0 * np.pi * np.fft.fftfreq(Nx, d=L / Nx)
+            ky = 2.0 * np.pi * np.fft.fftfreq(Ny, d=L / Ny)
+            KX, KY = np.meshgrid(kx, ky, indexing="ij")
+            lap = KX ** 2 + KY ** 2
+        ef = np.exp(-nu * lap * dt / 2.0)
+        u_hat = ef * u_hat
+        u = np.real(np.fft.ifft2(u_hat))
+        u_x = spectral_derivative_2d(u, axis=0, L=L)
+        u_y = spectral_derivative_2d(u, axis=1, L=L)
+        adv = cx * u_x + cy * u_y
+        u_hat = ef * (u_hat + dt * np.fft.fft2(-adv))
+        u = np.real(np.fft.ifft2(u_hat))
+        if not np.isfinite(u).all() or np.abs(u).max() > 1e3:
+            return np.full_like(u0, np.nan)
+        u_hat = np.fft.fft2(u)
+    return u
+
+
+def sample_smooth_ic_2d(N, L=1.0, h1_radius=0.3, ic_smoothness=1.0, rng=None):
+    """2D smooth IC with |k|^(-s) spectral decay (s = ic_smoothness)."""
+    if rng is None:
+        rng = np.random.default_rng()
+    u = rng.normal(size=(N, N))
+    kx = np.fft.fftfreq(N, d=L / N)
+    ky = np.fft.fftfreq(N, d=L / N)
+    KX, KY = np.meshgrid(kx, ky, indexing="ij")
+    k_abs = np.sqrt(KX ** 2 + KY ** 2)
+    k_abs[0, 0] = 1.0
+    u_hat = np.fft.fft2(u) * (k_abs ** (-float(ic_smoothness)))
+    u_s = np.real(np.fft.ifft2(u_hat))
+    u_s -= np.mean(u_s)
+    nrm = h1_norm_2d(u_s, L=L)
+    if nrm > 1e-8:
+        u_s = (h1_radius / nrm) * u_s
+    return u_s
+
+
+def h1_loss_torch_2d(u_pred, u_true, L=1.0):
+    """H^1 loss on 2D fields: L2 + ||∂x||^2 + ||∂y||^2."""
+    dx = L / u_pred.shape[-2]
+    dy = L / u_pred.shape[-1]
+    diff = u_pred - u_true
+    l2 = torch.mean(diff ** 2)
+
+    def grad_x(u):
+        return (torch.roll(u, -1, -2) - torch.roll(u, 1, -2)) / (2.0 * dx)
+
+    def grad_y(u):
+        return (torch.roll(u, -1, -1) - torch.roll(u, 1, -1)) / (2.0 * dy)
+
+    gx = torch.mean((grad_x(u_pred) - grad_x(u_true)) ** 2)
+    gy = torch.mean((grad_y(u_pred) - grad_y(u_true)) ** 2)
+    return l2 + gx + gy, l2.detach(), (gx + gy).detach()
+
+
 # ============================================================
 # FNO architecture
 # ============================================================
@@ -221,6 +322,60 @@ class SpectralConv1d(nn.Module):
 
         x_out = torch.fft.irfft(out_ft, n=N, dim=-1)
         return x_out
+
+
+class SpectralConv2d(nn.Module):
+    """2D Fourier convolution layer."""
+
+    def __init__(self, in_channels, out_channels, modes):
+        super().__init__()
+        self.modes = modes
+        scale = 1.0 / (in_channels * out_channels)
+        self.weights = nn.Parameter(
+            scale * torch.randn(in_channels, out_channels, modes, modes, 2)
+        )
+
+    def forward(self, x):
+        b, c, nx, ny = x.shape
+        x_ft = torch.fft.rfft2(x, dim=(-2, -1))
+        out_ft = torch.zeros(
+            b, self.weights.shape[1], nx, x_ft.shape[-1],
+            device=x.device, dtype=torch.cfloat,
+        )
+        w = torch.view_as_complex(self.weights)
+        m1 = min(self.modes, nx)
+        m2 = min(self.modes, x_ft.shape[-1])
+        out_ft[:, :, :m1, :m2] = torch.einsum(
+            "bixy,ioxy->boxy", x_ft[:, :, :m1, :m2], w[:, :, :m1, :m2]
+        )
+        return torch.fft.irfft2(out_ft, s=(nx, ny), dim=(-2, -1))
+
+
+class FNO2d(nn.Module):
+    """Fourier Neural Operator for 2D inputs on [0,1]^2."""
+
+    def __init__(self, modes=12, width=48):
+        super().__init__()
+        self.fc0 = nn.Linear(3, width)
+        self.conv_layers = nn.ModuleList(
+            [SpectralConv2d(width, width, modes) for _ in range(4)]
+        )
+        self.w_layers = nn.ModuleList(
+            [nn.Conv2d(width, width, 1) for _ in range(4)]
+        )
+        self.fc1 = nn.Linear(width, 128)
+        self.fc2 = nn.Linear(128, 1)
+
+    def forward(self, u0):
+        b, nx, ny = u0.shape
+        device = u0.device
+        xs = torch.linspace(0, 1, nx, device=device).view(1, nx, 1).expand(b, nx, ny)
+        ys = torch.linspace(0, 1, ny, device=device).view(1, 1, ny).expand(b, nx, ny)
+        x = self.fc0(torch.stack([u0, xs, ys], dim=-1)).permute(0, 3, 1, 2)
+        for conv, w in zip(self.conv_layers, self.w_layers):
+            x = F.gelu(conv(x) + w(x))
+        x = x.permute(0, 2, 3, 1)
+        return self.fc2(F.gelu(self.fc1(x))).squeeze(-1)
 
 
 class FNO1d(nn.Module):

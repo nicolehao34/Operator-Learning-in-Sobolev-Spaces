@@ -2,7 +2,7 @@
 Regenerate paper figures from saved experiment JSON (no full sweep re-run).
 
 Reads numerics/results_*.json and numerics/curves_burgers_N256.json (FIG 1).
-Writes PNGs to the repo root for LaTeX \\includegraphics.
+Writes timestamped PNGs to the repo root (canonical names are never overwritten).
 """
 
 import json
@@ -14,11 +14,21 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from plot_style import apply_paper_style, format_param_count, viridis_by_size
+from datetime import datetime
+
+from plot_style import apply_paper_style, format_param_count, versioned_output_path, viridis_by_size
 
 NUMERICS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(NUMERICS_DIR)
 MIN_PNG_BYTES = 5 * 1024
+_RUN_TS = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def _out(canonical_basename):
+    """Repo-root output path with timestamp; never overwrites the canonical PNG."""
+    return versioned_output_path(
+        os.path.join(REPO_ROOT, canonical_basename), timestamp=_RUN_TS,
+    )
 
 
 def _load_json(path):
@@ -243,38 +253,58 @@ def fig_prediction(pred_path, out_path):
     return "2 panels, linear axes"
 
 
-def fig_two_operator_scaling(burgers_path, linear_path, out_path):
-    burgers = _load_json(burgers_path)
-    linear = _load_json(linear_path)
-
+def fig_multi_operator_scaling(result_paths, out_path):
+    """Overlay best-epoch scaling curves; each operator gets its own benchmark line."""
     fig, ax = plt.subplots()
-    for results, label in [(burgers, "burgers"), (linear, "linear")]:
+    ref_P = None
+    for path in result_paths:
+        results = _load_json(path)
+        label = results["operator"]
+        bench = results.get("benchmark_exponent", results["s"] / results["d"])
         configs = _sorted_configs(results)
         P = np.array([c["params"] for c in configs], float)
         mean = np.array([np.mean(c["best_list"]) for c in configs])
         std = np.array([np.std(c["best_list"]) for c in configs])
         fit = results["fit"]
         ax.errorbar(
-            P, mean, yerr=std, fmt="o-", capsize=3,
+            P, mean, yerr=std, fmt="o-", capsize=3, markersize=5,
             label=rf"{label}: $\alpha$={fit['alpha']:.2f}",
         )
-
-    ref_P = np.array([c["params"] for c in _sorted_configs(burgers)], float)
-    ref_mean = np.array([np.mean(c["best_list"]) for c in _sorted_configs(burgers)])
-    ref = ref_mean[0] * (ref_P / ref_P[0]) ** (-1.0)
-    ax.loglog(ref_P, ref, "k--", alpha=0.6, label=r"benchmark $N^{-1}$")
+        ref = mean[0] * (P / P[0]) ** (-bench)
+        ax.loglog(P, ref, "--", alpha=0.6,
+                  label=rf"{label} benchmark $N^{{-{bench:.2g}}}$")
+        if ref_P is None:
+            ref_P = P
 
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("parameters $N$")
     ax.set_ylabel(r"test $H^1$ error")
-    ax.set_title("Scaling: burgers vs linear (N=256)")
-    ax.legend()
+    ax.set_title("Scaling across operators")
+    ax.legend(fontsize=8, loc="upper left", bbox_to_anchor=(1.02, 1.0))
+    fig.subplots_adjust(right=0.72)
     _save_fig(out_path)
-    return "2 operators + benchmark, log-log"
+    return f"{len(result_paths)} operators, log-log"
+
+
+def fig_two_operator_scaling(burgers_path, linear_path, out_path):
+    return fig_multi_operator_scaling([burgers_path, linear_path], out_path)
 
 
 def main():
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--overlay":
+        apply_paper_style()
+        paths = sys.argv[2:]
+        if len(paths) < 2:
+            print("Usage: make_paper_figures.py --overlay results_a.json results_b.json [...]")
+            sys.exit(1)
+        out = _out("fno_two_operator_scaling.png")
+        detail = fig_multi_operator_scaling(paths, out)
+        _assert_png(out)
+        print(f"{os.path.basename(out)}: OK ({detail})")
+        return
+
     apply_paper_style()
     summaries = []
 
@@ -284,7 +314,7 @@ def main():
     results_linear = os.path.join(NUMERICS_DIR, "results_linear_N256.json")
 
     # FIG 1
-    out1 = os.path.join(REPO_ROOT, "fno_learning_curves_by_size.png")
+    out1 = _out("fno_learning_curves_by_size.png")
     if not os.path.isfile(curves_path):
         print(f"ERROR: {curves_path} missing — run "
               "`python run_experiments.py --save_curves` first.", file=sys.stderr)
@@ -294,25 +324,25 @@ def main():
     summaries.append((out1, f"OK ({detail1})"))
 
     # FIG 2
-    out2 = os.path.join(REPO_ROOT, "fno_instability_vs_size.png")
+    out2 = _out("fno_instability_vs_size.png")
     detail2 = fig_instability(results256, out2)
     _assert_png(out2)
     summaries.append((out2, f"OK ({detail2})"))
 
     # FIG 3
-    out3 = os.path.join(REPO_ROOT, "fno_best_vs_final.png")
+    out3 = _out("fno_best_vs_final.png")
     detail3 = fig_best_vs_final(results256, out3)
     _assert_png(out3)
     summaries.append((out3, f"OK ({detail3})"))
 
     # FIG 4
-    out4 = os.path.join(REPO_ROOT, "fno_alpha_resolution.png")
+    out4 = _out("fno_alpha_resolution.png")
     detail4 = fig_alpha_resolution(results64, results256, out4)
     _assert_png(out4)
     summaries.append((out4, f"OK ({detail4})"))
 
     # FIG 5 (conditional)
-    out5 = os.path.join(REPO_ROOT, "fno_two_operator_scaling.png")
+    out5 = _out("fno_two_operator_scaling.png")
     if os.path.isfile(results_linear):
         detail5 = fig_two_operator_scaling(results256, results_linear, out5)
         _assert_png(out5)
@@ -326,13 +356,13 @@ def main():
     longrun_path = os.path.join(NUMERICS_DIR, "longrun_curves_N64.json")
     pred_path = os.path.join(NUMERICS_DIR, "prediction_sample_N64.json")
 
-    out_scaling = os.path.join(REPO_ROOT, "scaling_burgers_N256.png")
+    out_scaling = _out("scaling_burgers_N256.png")
     detail_s = fig_scaling_burgers(results256, out_scaling)
     _assert_png(out_scaling)
     summaries.append((out_scaling, f"OK ({detail_s})"))
 
     if os.path.isfile(longrun_path):
-        out_lr = os.path.join(REPO_ROOT, "fno_longrun_learning_curves.png")
+        out_lr = _out("fno_longrun_learning_curves.png")
         detail_lr = fig_longrun(longrun_path, out_lr)
         _assert_png(out_lr)
         summaries.append((out_lr, f"OK ({detail_lr})"))
@@ -341,7 +371,7 @@ def main():
               "`python save_legacy_figure_data.py` first.")
 
     if os.path.isfile(pred_path):
-        out_pred = os.path.join(REPO_ROOT, "fno_prediction.png")
+        out_pred = _out("fno_prediction.png")
         detail_pred = fig_prediction(pred_path, out_pred)
         _assert_png(out_pred)
         summaries.append((out_pred, f"OK ({detail_pred})"))

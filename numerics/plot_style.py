@@ -1,5 +1,8 @@
 """Shared matplotlib style for paper figures."""
 
+import os
+from datetime import datetime
+
 import matplotlib as mpl
 
 
@@ -41,3 +44,16 @@ def viridis_by_size(n):
 
 def format_param_count(n):
     return f"N = {int(n):,}"
+
+
+def versioned_output_path(canonical_path, timestamp=None):
+    """
+    Return a timestamped path that leaves the canonical file untouched.
+
+    Example: fno_prediction.png -> fno_prediction_20260624_233045.png
+    """
+    if timestamp is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    directory, basename = os.path.split(canonical_path)
+    stem, ext = os.path.splitext(basename)
+    return os.path.join(directory, f"{stem}_{timestamp}{ext}")

@@ -1,5 +1,5 @@
 {
-  "operator": "burgers",
+  "operator": "linear",
   "grid": 64,
   "d": 1,
   "s": 1.0,
@@ -13,13 +13,13 @@
       "width": 16,
       "params": 11633,
       "best_list": [
-        0.010862988419830799
+        0.006999955978244543
       ],
       "final_list": [
-        0.010862988419830799
+        0.006999955978244543
       ],
       "rel_list": [
-        2.7079443779911023
+        2.062051879103967
       ],
       "n_spiked": 0
     },
@@ -28,29 +28,29 @@
       "width": 24,
       "params": 42665,
       "best_list": [
-        0.001479516620747745
+        0.0018454929813742638
       ],
       "final_list": [
-        0.001479516620747745
+        0.0018454929813742638
       ],
       "rel_list": [
-        1.0058815062656594
+        1.061863228644217
       ],
       "n_spiked": 0
     }
   ],
   "fit": {
-    "alpha": 1.5341249418191627,
+    "alpha": 1.0258742132984928,
     "ci95": [
-      1.5341249418191627,
-      1.5341249418191627
+      1.0258742132984928,
+      1.0258742132984928
     ],
     "r2": 1.0,
-    "C": 18759.80856891091
+    "C": 103.74892653718285
   },
   "total_n_spiked": 0,
   "params_used": {
-    "operator": "burgers",
+    "operator": "linear",
     "grid": 64,
     "seeds": 1,
     "epochs": 4,
@@ -59,12 +59,11 @@
     "lr": 0.001,
     "batch": 32,
     "nu": 0.01,
-    "grad_clip": 1.0,
-    "lr_schedule": "cosine",
+    "grad_clip": null,
+    "lr_schedule": "none",
     "ic_smoothness": 1,
-    "benchmark_exponent": null,
+    "benchmark_exponent": 1.0,
     "quick": true,
-    "save_curves": false,
     "no_plot": false,
     "plot": true
   }
